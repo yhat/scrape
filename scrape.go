@@ -14,7 +14,7 @@ func Find(node *html.Node, matcher Matcher) []*html.Node {
 		return []*html.Node{node}
 	}
 
-	matched := []*html.Node{node}
+	matched := []*html.Node{}
 	for c := node.FirstChild; c != nil; c = c.NextSibling {
 		found := Find(c, matcher)
 		if len(found) > 0 {
@@ -34,10 +34,15 @@ func FindOne(node *html.Node, matcher Matcher) (n *html.Node, ok bool) {
 
 func Text(node *html.Node) string {
 	joiner := func(s []string) string {
+		n := 0
 		for i := range s {
-			s[i] = strings.TrimSpace(s[i])
+			trimmed := strings.TrimSpace(s[i])
+			if trimmed != "" {
+				s[n] = trimmed
+				n++
+			}
 		}
-		return strings.Join(s, " ")
+		return strings.Join(s[:n], " ")
 	}
 	return TextJoin(node, joiner)
 }
