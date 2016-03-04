@@ -11,20 +11,16 @@ import (
 // Matcher should return true when a desired node is found.
 type Matcher func(node *html.Node) bool
 
-// FindAll returns all nodes which match the provided Matcher.
+// FindAll returns all nodes which match the provided Matcher. After discovering a matching
+// node, it will _not_ discover matching subnodes of that node.
 func FindAll(node *html.Node, matcher Matcher) []*html.Node {
-	if matcher(node) {
-		return []*html.Node{node}
-	}
+	return findAllInternal(node, matcher, false)
+}
 
-	matched := []*html.Node{}
-	for c := node.FirstChild; c != nil; c = c.NextSibling {
-		found := FindAll(c, matcher)
-		if len(found) > 0 {
-			matched = append(matched, found...)
-		}
-	}
-	return matched
+// FindAllNested returns all nodes which match the provided Matcher and _will_ discover
+// matching subnodes of matching nodes.
+func FindAllNested(node *html.Node, matcher Matcher) []*html.Node {
+	return findAllInternal(node, matcher, true)
 }
 
 // Find returns the first node which matches the matcher using depth-first search.
@@ -128,4 +124,25 @@ func ByClass(class string) Matcher {
 		}
 		return false
 	}
+}
+
+// findAllInternal encapsulates the node tree traversal
+func findAllInternal(node *html.Node, matcher Matcher, searchNested bool) []*html.Node {
+	matched := []*html.Node{}
+
+	if matcher(node) {
+		matched = append(matched, node)
+
+		if !searchNested {
+			return matched
+		}
+	}
+
+	for c := node.FirstChild; c != nil; c = c.NextSibling {
+		found := findAllInternal(c, matcher, searchNested)
+		if len(found) > 0 {
+			matched = append(matched, found...)
+		}
+	}
+	return matched
 }
