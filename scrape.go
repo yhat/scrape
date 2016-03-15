@@ -14,12 +14,18 @@ type Matcher func(node *html.Node) bool
 // FindAll returns all nodes which match the provided Matcher. After discovering a matching
 // node, it will _not_ discover matching subnodes of that node.
 func FindAll(node *html.Node, matcher Matcher) []*html.Node {
+	if node == nil || matcher == nil {
+		return nil
+	}
 	return findAllInternal(node, matcher, false)
 }
 
 // FindAllNested returns all nodes which match the provided Matcher and _will_ discover
 // matching subnodes of matching nodes.
 func FindAllNested(node *html.Node, matcher Matcher) []*html.Node {
+	if node == nil || matcher == nil {
+		return nil
+	}
 	return findAllInternal(node, matcher, true)
 }
 
@@ -35,14 +41,16 @@ func FindAllNested(node *html.Node, matcher Matcher) []*html.Node {
 //     }
 //     body, ok := scrape.Find(root, matcher)
 func Find(node *html.Node, matcher Matcher) (n *html.Node, ok bool) {
-	if matcher(node) {
-		return node, true
-	}
+	if node != nil && matcher != nil {
+		if matcher(node) {
+			return node, true
+		}
 
-	for c := node.FirstChild; c != nil; c = c.NextSibling {
-		n, ok := Find(c, matcher)
-		if ok {
-			return n, true
+		for c := node.FirstChild; c != nil; c = c.NextSibling {
+			n, ok := Find(c, matcher)
+			if ok {
+				return n, true
+			}
 		}
 	}
 	return nil, false
@@ -51,6 +59,10 @@ func Find(node *html.Node, matcher Matcher) (n *html.Node, ok bool) {
 // FindParent searches up HTML tree from the current node until either a
 // match is found or the top is hit.
 func FindParent(node *html.Node, matcher Matcher) (n *html.Node, ok bool) {
+	if node == nil || matcher == nil {
+		return nil, false
+	}
+
 	for p := node.Parent; p != nil; p = p.Parent {
 		if matcher(p) {
 			return p, true
@@ -62,6 +74,10 @@ func FindParent(node *html.Node, matcher Matcher) (n *html.Node, ok bool) {
 // Text returns text from all descendant text nodes joined.
 // For control over the join function, see TextJoin.
 func Text(node *html.Node) string {
+	if node == nil {
+		return ""
+	}
+
 	joiner := func(s []string) string {
 		n := 0
 		for i := range s {
@@ -79,7 +95,15 @@ func Text(node *html.Node) string {
 // TextJoin returns a string from all descendant text nodes joined by a
 // caller provided join function.
 func TextJoin(node *html.Node, join func([]string) string) string {
+	if node == nil || join == nil {
+		return ""
+	}
+
 	nodes := FindAll(node, func(n *html.Node) bool { return n.Type == html.TextNode })
+	if nodes == nil {
+		return ""
+	}
+
 	parts := make([]string, len(nodes))
 	for i, n := range nodes {
 		parts[i] = n.Data
@@ -89,9 +113,11 @@ func TextJoin(node *html.Node, join func([]string) string) string {
 
 // Attr returns the value of an HTML attribute.
 func Attr(node *html.Node, key string) string {
-	for _, a := range node.Attr {
-		if a.Key == key {
-			return a.Val
+	if node != nil {
+		for _, a := range node.Attr {
+			if a.Key == key {
+				return a.Val
+			}
 		}
 	}
 	return ""
