@@ -23,6 +23,13 @@ func FindAllNested(node *html.Node, matcher Matcher) []*html.Node {
 	return findAllInternal(node, matcher, true)
 }
 
+type nodeStack struct{ s []*html.Node }
+
+func (s *nodeStack) Top() *html.Node   { return s.s[len(s.s)-1] }
+func (s *nodeStack) Pop()              { s.s = s.s[:len(s.s)-1] }
+func (s *nodeStack) Push(v *html.Node) { s.s = append(s.s, v) }
+func (s *nodeStack) Empty() bool       { return len(s.s) == 0 }
+
 // Find returns the first node which matches the matcher using depth-first search.
 // If no node is found, ok will be false.
 //
@@ -39,14 +46,24 @@ func Find(node *html.Node, matcher Matcher) (n *html.Node, ok bool) {
 		return node, true
 	}
 
-	for c := node.FirstChild; c != nil; c = c.NextSibling {
-		n, ok := Find(c, matcher)
-		if ok {
-			return n, true
+	s := nodeStack{}
+	s.Push(node)
+
+	for !s.Empty() {
+		curr := s.Top()
+		s.Pop()
+
+		if matcher(curr) {
+			return curr, true
+		}
+
+		for c := curr.FirstChild; c != nil; c = c.NextSibling {
+			s.Push(c)
 		}
 	}
 	return nil, false
 }
+
 
 // FindParent searches up HTML tree from the current node until either a
 // match is found or the top is hit.
