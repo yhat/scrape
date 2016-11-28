@@ -146,3 +146,44 @@ func findAllInternal(node *html.Node, matcher Matcher, searchNested bool) []*htm
 	}
 	return matched
 }
+
+// Find returns the first node which matches the matcher using next sibling search.
+// If no node is found, ok will be false.
+//
+//     root, err := html.Parse(resp.Body)
+//     if err != nil {
+//         // handle error
+//     }
+//     matcher := func(n *html.Node) bool {
+//         return n.DataAtom == atom.Body
+//     }
+//     body, ok := scrape.FindNextSibling(root, matcher)
+func FindNextSibling(node *html.Node, matcher Matcher) (n *html.Node, ok bool) {
+
+	for s := node.NextSibling; s != nil; s = s.NextSibling {
+		if matcher(s) {
+			return s, true
+		}
+	}
+	return nil, false
+}
+
+// Find returns the first node which matches the matcher using previous sibling search.
+// If no node is found, ok will be false.
+//
+//     root, err := html.Parse(resp.Body)
+//     if err != nil {
+//         // handle error
+//     }
+//     matcher := func(n *html.Node) bool {
+//         return n.DataAtom == atom.Body
+//     }
+//     body, ok := scrape.FindPrevSibling(root, matcher)
+func FindPrevSibling(node *html.Node, matcher Matcher) (n *html.Node, ok bool) {
+	for s := node.PrevSibling; s != nil; s = s.PrevSibling {
+		if matcher(s) {
+			return s, true
+		}
+	}
+	return nil, false
+}
